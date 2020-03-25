@@ -107,7 +107,7 @@ class LocationResultHelper {
     /**
      * Displays a notification with the location results.
      */
-    void showNotification() {
+    void showNotification(String danger) {
         Intent notificationIntent = new Intent(mContext, MapsActivity.class);
 
         // Construct a task stack.
@@ -119,14 +119,20 @@ class LocationResultHelper {
         // Push the content Intent onto the stack.
         stackBuilder.addNextIntent(notificationIntent);
 
+        String Title = "Entering Danger Area";
+        if(danger == "None")
+        {
+            Title = "Your Location is set";
+        }
+
         // Get a PendingIntent containing the entire back stack.
         PendingIntent notificationPendingIntent =
                 stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification.Builder notificationBuilder = new Notification.Builder(mContext,
                 PRIMARY_CHANNEL)
-                .setContentTitle(getLocationResultTitle())
-                .setContentText(getLocationResultText())
+                .setContentTitle(Title)
+                .setContentText("You are near " + danger + "person..../n Stay Alert")
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setAutoCancel(true)
                 .setContentIntent(notificationPendingIntent);

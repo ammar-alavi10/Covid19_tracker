@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "139892261744",
+    "firebase_url": "https://covid-ce713.firebaseio.com",
+    "project_id": "covid-ce713",
+    "storage_bucket": "covid-ce713.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:139892261744:android:84485fd9d9ae09f3cd45b5",
+        "android_client_info": {
+          "package_name": "com.ammar.myapplication"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "139892261744-p1ssk27hro0d6n550l0v6sft4cg59beu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGrV90NYcZbjCfPdTVeQ-G2xTr0LaoBpA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "139892261744-p1ssk27hro0d6n550l0v6sft4cg59beu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -125,17 +125,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mLocationRequest.setInterval(UPDATE_INTERVAL);
 
-        // Sets the fastest rate for active location updates. This interval is exact, and your
-        // application will never receive updates faster than this value.
         mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-        // Sets the maximum time when batched location updates are delivered. Updates may be
-        // delivered sooner than this interval.
         mLocationRequest.setMaxWaitTime(MAX_WAIT_TIME);
 
-        //Gets the current location settings of a user's device by creating a LocationSettingsRequest.Builder,
-        // and add one or more location requests.
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
                 .addLocationRequest(mLocationRequest);
 

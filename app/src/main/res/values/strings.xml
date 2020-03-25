@@ -21,4 +21,12 @@
     </plurals>
 
     <string name="default_channel">Default channel</string>
+
+    <string-array name="type_of_person_arrays">
+        <item>Covid-19 Positive</item>
+        <item>You Have Symptoms</item>
+        <item>Travel History Abroad</item>
+        <item>Close Contact with a Patient</item>
+        <item>None of the Above</item>
+    </string-array>
 </resources>

@@ -18,6 +18,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:text="Start Tracking"
+        android:background="@color/colorPrimary"
+        android:textColor="#FFFFFF"
         android:layout_margin="5dp"/>
 
 </RelativeLayout>
