@@ -43,17 +43,32 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.gson.Gson;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import okhttp3.OkHttpClient;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         SharedPreferences.OnSharedPreferenceChangeListener{
@@ -71,6 +86,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
     LocationManager locationManager;
     LocationListener locationListener;
+    List<LatLng> loclist;
+    int i = 0;
 
 
     @Override
@@ -80,6 +97,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mRequestUpdatesButton = findViewById(R.id.tracking_button);
 
+        getandsavechannelnames();
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -95,6 +113,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     }
+
 
     @Override
     protected void onStart() {
@@ -302,10 +321,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void requestLocationUpdates(View view) {
 
-        if(mRequestUpdatesButton.getText().toString() == "Start Tracking") {
+        if((mRequestUpdatesButton.getText().toString()).equals("Start Tracking")) {
             try {
                 Log.i(TAG, "Starting location updates");
                 LocationRequestHelper.setRequesting(this, true);
+                List<ChannelNames> channelNames;
                 mFusedLocationClient.requestLocationUpdates(mLocationRequest, getPendingIntent());
             } catch (SecurityException e) {
                 LocationRequestHelper.setRequesting(this, false);
@@ -353,10 +373,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onLocationChanged(Location location) {
                 Toast.makeText(MapsActivity.this, location.toString(), Toast.LENGTH_LONG).show();
-
-                mMap.clear();
+                if(i == 0)
+                {
+                    mMap.clear();
+                }
+                else
+                {
+                    
+                }
                 LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
-                mMap.addMarker(new MarkerOptions().position(myloc).title(""));
+                Marker marker = mMap.addMarker(new MarkerOptions().position(myloc).title(""));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,15));
             }
 
@@ -382,7 +408,75 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         else
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,2000,100,locationListener);
+        getandsavechannelnames();
+        for( int i =0 ; i < loclist.size(); i++){
+            mMap.addMarker(new MarkerOptions().position(loclist.get(i)).title(""));
+        }
 
+
+    }
+
+    private void getandsavechannelnames() {
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(100, TimeUnit.SECONDS)
+                .readTimeout(100, TimeUnit.SECONDS)
+                .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(ApiCalls.BASE_URL)
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        final SharedPreferences myPrefs =this.getSharedPreferences("myPrefs", MODE_PRIVATE);
+        String token = myPrefs.getString("TOKEN","");
+
+        int i;
+        ApiCalls locationApi = retrofit.create(ApiCalls.class);
+        Call<Object> call = locationApi.getLocationNearby(token);
+        call.enqueue(new CallBackWithRetry<Object>("UpdateLocation", 10) {
+            @Override
+            public void onResponse(Call<Object> call, Response<Object> response) {
+
+                if(!response.isSuccessful()){
+                    Toast.makeText(getApplicationContext(),"No nearby Patients", Toast.LENGTH_LONG).show();
+                }
+
+                String resp = response.body().toString();
+                try {
+                    JSONObject obj = new JSONObject(resp);
+                    JSONArray array = obj.getJSONArray("global_plotted_coordinates");
+                    for (int i =0 ;i < array.length(); i++)
+                    {
+                        JSONObject jsonObject = array.getJSONObject(i);
+                        int channel = jsonObject.getInt("channel_id");
+                        int category = jsonObject.getInt("status");
+                        SharedPreferences.Editor editor = myPrefs.edit();
+                        editor.putInt("CHANNELID"+ String.valueOf(i), channel);
+                        editor.putInt("CATEGORY"+ String.valueOf(i), category);
+                        editor.apply();
+                        Double lat = jsonObject.getDouble("latitude");
+                        Double lon = jsonObject.getDouble("longitude");
+                        LatLng loc = new LatLng(lat,lon);
+                        loclist.add(loc);
+                    }
+                    JSONObject myobj = obj.getJSONObject("user_plotted_data");
+                    int mychannel = myobj.getInt("channel_id");
+                    SharedPreferences.Editor editor = myPrefs.edit();
+                    editor.putInt("MYCHANNELID", mychannel);
+                    editor.apply();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<Object> call, Throwable t) {
+                super.onFailure(call, t);
+            }
+        });
     }
 
 }

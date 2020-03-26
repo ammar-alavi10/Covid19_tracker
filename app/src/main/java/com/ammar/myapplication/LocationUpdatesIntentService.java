@@ -49,7 +49,7 @@ public class LocationUpdatesIntentService extends IntentService {
                     // Save the location data to SharedPreferences.
                     locationResultHelper.saveResults();
                     // Show notification with the location data.
-                    locationResultHelper.showNotification();
+                    locationResultHelper.showNotification("None");
                     Log.i(TAG, LocationResultHelper.getSavedLocationResult(this));
                 }
             }
