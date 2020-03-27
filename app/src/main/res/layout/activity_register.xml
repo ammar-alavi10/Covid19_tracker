@@ -45,7 +45,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:entries="@array/type_of_person_arrays"
-                android:prompt="Select One"
                 android:id="@+id/spin"
                 android:layout_marginTop="8dp"/>
 

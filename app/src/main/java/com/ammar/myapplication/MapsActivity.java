@@ -49,6 +49,7 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.FirebaseApp;
 import com.google.gson.Gson;
 
 import org.json.JSONArray;
@@ -87,7 +88,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LocationManager locationManager;
     LocationListener locationListener;
     List<LatLng> loclist;
-    int i = 0;
+    int mark = 0;
 
 
     @Override
@@ -95,15 +96,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
-        mRequestUpdatesButton = findViewById(R.id.tracking_button);
+        FirebaseApp.initializeApp(this);
 
-        getandsavechannelnames();
+        mRequestUpdatesButton = findViewById(R.id.tracking_button);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        // Check if the user revoked runtime permissions.
+//         Check if the user revoked runtime permissions.
         if (!checkPermissions()) {
             requestPermissions();
         } else {
@@ -373,17 +374,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onLocationChanged(Location location) {
                 Toast.makeText(MapsActivity.this, location.toString(), Toast.LENGTH_LONG).show();
-                if(i == 0)
+                Marker marker = null;
+                if(mark == 0)
                 {
                     mMap.clear();
                 }
                 else
                 {
-                    
+                    marker.remove();
+                    mark++;
                 }
                 LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
-                Marker marker = mMap.addMarker(new MarkerOptions().position(myloc).title(""));
+                marker = mMap.addMarker(new MarkerOptions().position(myloc).title(""));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,15));
+                SharedPreferences myprefs = MapsActivity.this.getSharedPreferences("myPrefs",MODE_PRIVATE);
+                Toast.makeText(MapsActivity.this,myprefs.getString("TOKEN","KUCH NHI"),Toast.LENGTH_LONG).show();
+                getandsavechannelnames();
             }
 
             @Override
@@ -409,8 +415,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         else
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,2000,100,locationListener);
         getandsavechannelnames();
-        for( int i =0 ; i < loclist.size(); i++){
-            mMap.addMarker(new MarkerOptions().position(loclist.get(i)).title(""));
+        if(loclist != null) {
+            for (int i = 0; i < loclist.size(); i++) {
+                mMap.addMarker(new MarkerOptions().position(loclist.get(i)).title(""));
+            }
         }
 
 
@@ -429,8 +437,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
-        final SharedPreferences myPrefs =this.getSharedPreferences("myPrefs", MODE_PRIVATE);
-        String token = myPrefs.getString("TOKEN","");
+        final SharedPreferences myPrefs = this.getSharedPreferences("myPrefs", MODE_PRIVATE);
+        String token = myPrefs.getString("TOKEN","KUCH NHI");
+        Toast.makeText(MapsActivity.this,token,Toast.LENGTH_LONG).show();
 
         int i;
         ApiCalls locationApi = retrofit.create(ApiCalls.class);
@@ -439,17 +448,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onResponse(Call<Object> call, Response<Object> response) {
 
-                if(!response.isSuccessful()){
+                if(!response.isSuccessful() || response.body() == null){
                     Toast.makeText(getApplicationContext(),"No nearby Patients", Toast.LENGTH_LONG).show();
+                    return;
                 }
 
                 String resp = response.body().toString();
                 try {
                     JSONObject obj = new JSONObject(resp);
                     JSONArray array = obj.getJSONArray("global_plotted_coordinates");
-                    for (int i =0 ;i < array.length(); i++)
+                    int i;
+                    for (i =0 ;i < array.length(); i++)
                     {
                         JSONObject jsonObject = array.getJSONObject(i);
+                        if(jsonObject.isNull("channel_id") && jsonObject.isNull("status"))
+                        {
+
+                            continue;
+                        }
                         int channel = jsonObject.getInt("channel_id");
                         int category = jsonObject.getInt("status");
                         SharedPreferences.Editor editor = myPrefs.edit();
@@ -464,6 +480,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     JSONObject myobj = obj.getJSONObject("user_plotted_data");
                     int mychannel = myobj.getInt("channel_id");
                     SharedPreferences.Editor editor = myPrefs.edit();
+                    editor.putInt("TotalChannels",i);
                     editor.putInt("MYCHANNELID", mychannel);
                     editor.apply();
                 } catch (JSONException e) {

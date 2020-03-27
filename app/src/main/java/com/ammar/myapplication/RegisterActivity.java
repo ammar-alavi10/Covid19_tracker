@@ -14,6 +14,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Spinner;
@@ -77,10 +78,11 @@ public class RegisterActivity extends AppCompatActivity {
 
                 if(!response.isSuccessful()) {
                     showAlertDialogue();
+                    Log.d("APICALL","FAILED");
                     return;
                 }
 
-                Toast.makeText(RegisterActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(RegisterActivity.this, "Registration Successful!", Toast.LENGTH_LONG).show();
                 myPrefs = RegisterActivity.this.getSharedPreferences("myPrefs", MODE_PRIVATE);
                 SharedPreferences.Editor editor = myPrefs.edit();
                 editor.putString("USERNAME", id);
@@ -96,6 +98,7 @@ public class RegisterActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<Object> call, Throwable t) {
+                Log.d("APICALL","FAILED"+t.toString());
                 showAlertDialogue();
             }
         });

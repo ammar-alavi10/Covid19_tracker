@@ -2,18 +2,18 @@ package com.ammar.myapplication;
 
 public class User {
 
-    private String userId;
+    private String username;
     private String password;
     private String email;
 
-    public User(String userId, String password, String email) {
-        this.userId = userId;
+    public User(String username, String password, String email) {
+        this.username = username;
         this.password = password;
         this.email = email;
     }
 
-    public String getUserId() {
-        return userId;
+    public String getUsername() {
+        return username;
     }
 
     public String getPassword() {

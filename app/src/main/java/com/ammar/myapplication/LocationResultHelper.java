@@ -120,11 +120,15 @@ class LocationResultHelper {
         stackBuilder.addNextIntent(notificationIntent);
 
         String Title = "Entering Dangerous Area";
+        String text;
         if(danger.equals("None"))
         {
             Title = "Your Location is set";
+            text = "You are safe";
         }
-
+        else {
+            text = "You are near a" + danger + "person"+"\n" +"Stay Alert";
+        }
         // Get a PendingIntent containing the entire back stack.
         PendingIntent notificationPendingIntent =
                 stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -132,7 +136,7 @@ class LocationResultHelper {
         Notification.Builder notificationBuilder = new Notification.Builder(mContext,
                 PRIMARY_CHANNEL)
                 .setContentTitle(Title)
-                .setContentText("You are near a" + danger + "person..../n Stay Alert")
+                .setContentText(text)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setAutoCancel(true)
                 .setContentIntent(notificationPendingIntent);

@@ -10,6 +10,7 @@ import android.util.Log;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -44,7 +45,10 @@ public class LocationUpdatesBroadcastReceiver extends BroadcastReceiver {
                 LocationResult result = LocationResult.extractResult(intent);
                 if (result != null) {
                     List<Location> locations = result.getLocations();
+                    FirebaseApp.initializeApp(context);
+
                     sendLocationToServer(context, locations);
+
 //                    List<Location> nearbyLocations = requestLocationsFromServer();
                     String danger = distOfLoc(context, locations.get(locations.size()-1));
                     LocationResultHelper locationResultHelper = new LocationResultHelper(
@@ -61,11 +65,14 @@ public class LocationUpdatesBroadcastReceiver extends BroadcastReceiver {
 
     private String distOfLoc(Context context, final Location mylocation) {
         //code to get Locations from server
+        FirebaseApp.initializeApp(context);
+
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         myPrefs = context.getSharedPreferences("myPrefs", MODE_PRIVATE);
         String mychannel = String.valueOf(myPrefs.getInt("MYCHANNELID",1000));
         final String[] danger = {"None"};
-        for (int i = 0 ; i < 25 ; i++) {
+        int no_of_channel = myPrefs.getInt("TotalChannels",0);
+        for (int i = 0 ; i < no_of_channel ; i++) {
 
 
             String channelname = String.valueOf(myPrefs.getInt("CHANNELID" + String.valueOf(i), 1000));

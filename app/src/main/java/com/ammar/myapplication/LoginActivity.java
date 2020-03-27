@@ -13,13 +13,18 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
 import java.util.concurrent.TimeUnit;
 
 public class LoginActivity extends AppCompatActivity {
+
+    EditText usrname,pwd;
 
     SharedPreferences mypref;
     String username, password;
@@ -28,17 +33,24 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        usrname = findViewById(R.id.mobile_no_login);
+        pwd = findViewById(R.id.password_login);
 
-        mypref = getSharedPreferences(",myPrefs", MODE_PRIVATE);
+        mypref = getSharedPreferences("myPrefs", MODE_PRIVATE);
         username = mypref.getString("USERNAME", "username");
         password = mypref.getString("PASSWORD", "password");
+        usrname.setText(username);
+        pwd.setText(password);
     }
 
     public void toRegister(View view) {
+        Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+        startActivity(intent);
     }
 
     public void loginUser(View view) {
-
+        username = usrname.getText().toString();
+        password = pwd.getText().toString();
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(100, TimeUnit.SECONDS)
                 .readTimeout(100, TimeUnit.SECONDS)
@@ -59,13 +71,14 @@ public class LoginActivity extends AppCompatActivity {
 
                 if(!response.isSuccessful()) {
                     showAlertDialogue();
+                    Log.d("APICALL","FAILED");
                     return;
                 }
 
                 String token = new Gson().toJson(response.body()).split(":\"")[1].split("\"")[0];
                 SharedPreferences.Editor editor = mypref.edit();
                 editor.putString("TOKEN", token);
-                editor.commit();
+                editor.apply();
 
                 int statusCode = mypref.getInt("CATEGORY",0);
 
@@ -89,8 +102,11 @@ public class LoginActivity extends AppCompatActivity {
 
                     if(!response.isSuccessful()) {
                         showAlertDialogue();
+                        Log.d("APICALL","FAILED");
 
                     }
+
+                    Toast.makeText(LoginActivity.this,"Login Successful",Toast.LENGTH_LONG).show();
 
                     Intent intent = new Intent(LoginActivity.this, MapsActivity.class);
                     startActivity(intent);
@@ -101,6 +117,7 @@ public class LoginActivity extends AppCompatActivity {
                 @Override
                 public void onFailure(Call<Object> call2, Throwable t) {
 
+                    Log.d("APICALL","FAILED"+t.toString());
                     showAlertDialogue();
                 }
             });
@@ -110,6 +127,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<Object> call, Throwable t) {
                 showAlertDialogue();
+                Log.d("APICALL","FAILED"+t.toString());
             }
         });
 
