@@ -15,15 +15,48 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:layout_gravity="center"
+            android:gravity="center">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:layout_gravity="center">
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mobile No"
+                    android:textSize="20sp"
+                    android:layout_marginRight="10dp"/>
+
+                <EditText
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone"
+                    android:id="@+id/mobile_no_register"
+                    android:textSize="20sp"
+                    android:hint="Phone No"/>
+
+
+
+            </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
             android:layout_gravity="center">
 
-            <EditText
+
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:inputType="phone"
-                android:id="@+id/mobile_no_register"
+                android:text="Email id"
                 android:textSize="20sp"
-                android:hint="Phone No"/>
+                android:layout_marginRight="25dp"/>
 
             <EditText
                 android:layout_width="wrap_content"
@@ -33,6 +66,24 @@
                 android:textSize="20sp"
                 android:hint="Email Id"/>
 
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:layout_gravity="center">
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Password"
+                android:textSize="20sp"
+                android:layout_marginRight="10dp"/>
+
+
             <EditText
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -40,6 +91,8 @@
                 android:id="@+id/password_register"
                 android:hint="Password"
                 android:textSize="20sp"/>
+
+        </LinearLayout>
 
             <Spinner
                 android:layout_width="wrap_content"

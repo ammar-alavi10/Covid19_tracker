@@ -8,9 +8,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.location.Location;
+import android.media.AudioAttributes;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.app.NotificationChannel;
+import android.util.Log;
 
 
 import java.text.DateFormat;
@@ -38,9 +42,16 @@ class LocationResultHelper {
         mContext = context;
         mLocations = locations;
 
+        Uri uri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .build();
+
         NotificationChannel channel = new NotificationChannel(PRIMARY_CHANNEL,
                 context.getString(R.string.default_channel), NotificationManager.IMPORTANCE_DEFAULT);
         channel.setLightColor(Color.GREEN);
+        channel.setSound(uri,audioAttributes);
         channel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
         getNotificationManager().createNotificationChannel(channel);
     }
@@ -119,6 +130,7 @@ class LocationResultHelper {
         // Push the content Intent onto the stack.
         stackBuilder.addNextIntent(notificationIntent);
 
+        Log.d("Notification me",danger);
         String Title = "Entering Dangerous Area";
         String text;
         if(danger.equals("None"))
@@ -127,11 +139,12 @@ class LocationResultHelper {
             text = "You are safe";
         }
         else {
-            text = "You are near a" + danger + "person"+"\n" +"Stay Alert";
+            text = "You are near a " + danger + " person"+"\n" +"Stay Alert";
         }
         // Get a PendingIntent containing the entire back stack.
         PendingIntent notificationPendingIntent =
                 stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+
 
         Notification.Builder notificationBuilder = new Notification.Builder(mContext,
                 PRIMARY_CHANNEL)

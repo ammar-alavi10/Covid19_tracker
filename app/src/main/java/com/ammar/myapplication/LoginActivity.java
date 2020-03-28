@@ -15,6 +15,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -35,12 +36,16 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
         usrname = findViewById(R.id.mobile_no_login);
         pwd = findViewById(R.id.password_login);
+        Button loginbtn = findViewById(R.id.login_button);
 
         mypref = getSharedPreferences("myPrefs", MODE_PRIVATE);
         username = mypref.getString("USERNAME", "username");
         password = mypref.getString("PASSWORD", "password");
         usrname.setText(username);
         pwd.setText(password);
+        if(username != "username"){
+            loginUser(loginbtn);
+        }
     }
 
     public void toRegister(View view) {
@@ -72,6 +77,7 @@ public class LoginActivity extends AppCompatActivity {
                 if(!response.isSuccessful()) {
                     showAlertDialogue();
                     Log.d("APICALL","FAILED");
+                    Toast.makeText(LoginActivity.this,"Please Retry",Toast.LENGTH_LONG).show();
                     return;
                 }
 
@@ -95,7 +101,7 @@ public class LoginActivity extends AppCompatActivity {
                     .build();
 
                 ApiCalls statusApi = retrofit.create(ApiCalls.class);
-                Call<Object> call2 = statusApi.updateUserDetail(token, statusCode);
+                Call<Object> call2 = statusApi.updateUserDetail("Token "+token, statusCode);
                 call2.enqueue(new Callback<Object>() {
                 @Override
                 public void onResponse(Call<Object> call2, Response<Object> response) {
@@ -104,6 +110,7 @@ public class LoginActivity extends AppCompatActivity {
                         showAlertDialogue();
                         Log.d("APICALL","FAILED");
 
+                        Toast.makeText(LoginActivity.this,"Please Retry",Toast.LENGTH_LONG).show();
                     }
 
                     Toast.makeText(LoginActivity.this,"Login Successful",Toast.LENGTH_LONG).show();
@@ -118,6 +125,7 @@ public class LoginActivity extends AppCompatActivity {
                 public void onFailure(Call<Object> call2, Throwable t) {
 
                     Log.d("APICALL","FAILED"+t.toString());
+                    Toast.makeText(LoginActivity.this,"Please Retry",Toast.LENGTH_LONG).show();
                     showAlertDialogue();
                 }
             });
@@ -128,6 +136,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(Call<Object> call, Throwable t) {
                 showAlertDialogue();
                 Log.d("APICALL","FAILED"+t.toString());
+                Toast.makeText(LoginActivity.this,"Please Retry",Toast.LENGTH_LONG).show();
             }
         });
 

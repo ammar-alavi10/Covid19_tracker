@@ -4,15 +4,14 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
-import retrofit2.http.GET;
 import retrofit2.http.Header;
-import retrofit2.http.Headers;
 import retrofit2.http.POST;
 
 public interface ApiCalls {
 
     String BASE_URL = "http://tuhina840.pythonanywhere.com";
 
+//http://tuhina840.pythonanywhere.com
     @POST("tracker/register/")
     Call<Object> getRegistered(@Body User user);
 
@@ -89,7 +88,7 @@ public interface ApiCalls {
      */
 
     @POST("/tracker/table/")
-    Call<Object> getLocationNearby(@Header("Authorization") String token);
+    Call<Coordinates> getLocationNearby(@Header("Authorization") String token);
 
 
 }

@@ -9,11 +9,14 @@ import android.util.Log;
 
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +59,11 @@ public class LocationUpdatesBroadcastReceiver extends BroadcastReceiver {
                     // Save the location data to SharedPreferences.
                     locationResultHelper.saveResults();
                     // Show notification with the location data.
-                    locationResultHelper.showNotification(danger);
+                    locationResultHelper.showNotification(myPrefs.getString("DANGER","None"));
+                    myPrefs = context.getSharedPreferences("myPrefs", MODE_PRIVATE);
+                    SharedPreferences.Editor editor = myPrefs.edit();
+                    editor.putString("DANGER", "None");
+                    editor.apply();
                     Log.i(TAG, LocationResultHelper.getSavedLocationResult(context));
                 }
             }
@@ -65,9 +72,13 @@ public class LocationUpdatesBroadcastReceiver extends BroadcastReceiver {
 
     private String distOfLoc(Context context, final Location mylocation) {
         //code to get Locations from server
-        FirebaseApp.initializeApp(context);
-
+        Log.d("Firebase","Firestore ke andar jaane ki koshish");
         FirebaseFirestore db = FirebaseFirestore.getInstance();
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)
+                .build();
+        db.setFirestoreSettings(settings);
+
         myPrefs = context.getSharedPreferences("myPrefs", MODE_PRIVATE);
         String mychannel = String.valueOf(myPrefs.getInt("MYCHANNELID",1000));
         final String[] danger = {"None"};
@@ -77,42 +88,63 @@ public class LocationUpdatesBroadcastReceiver extends BroadcastReceiver {
 
             String channelname = String.valueOf(myPrefs.getInt("CHANNELID" + String.valueOf(i), 1000));
             final String category = String.valueOf(myPrefs.getInt("CATEGORY" + String.valueOf(i), 1000));
+            Log.d("Channel name","channel"+channelname);
             if (channelname != mychannel && channelname != "1000") {
 
                 DocumentReference user = db.collection("main_data").document("channel"+channelname);
-                user.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                user.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
-                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-
-                        DocumentSnapshot doc = task.getResult();
-                        String latitude = (String) doc.get("Latitude");
-                        String longitude = (String) doc.get("Longitude");
-                        if (!((String) doc.get("Latitude")).equals("null") && !category.equals("5")) {
-                            Double lat = Double.parseDouble(latitude);
-                            Double lon = Double.parseDouble(longitude);
-                            Location location = new Location("New Location");
-                            location.setLatitude(lat);
-                            location.setLongitude(lon);
-                            double distance = mylocation.distanceTo(location);
-                            if (distance < 100.0) {
-                                if(!category.equals("1")){
-                                    danger[0] = "Covid-19 POSITIVE";
-                                }
-                                else{
-                                    danger[0] = "dangerous";
+                    public void onSuccess(DocumentSnapshot documentSnapshot) {
+                        if (documentSnapshot.exists()) {
+                            Log.d(TAG, "onSuccess: LIST");
+                            Log.d("Firestore ke andar", "aaya");
+                            DocumentSnapshot doc = documentSnapshot;
+                            String latitude = (String) doc.get("latitude");
+                            String longitude = (String) doc.get("longitude");
+                            if (doc.get("latitude") != null && !category.equals("5")) {
+                                Double lat = Double.parseDouble(latitude);
+                                Double lon = Double.parseDouble(longitude);
+                                Location location = new Location("New Location");
+                                location.setLatitude(lat);
+                                location.setLongitude(lon);
+                                double distance = mylocation.distanceTo(location);
+                                Log.d("DISTANCE", String.valueOf(distance));
+                                if (distance < 100.0) {
+                                    Log.d("DANGEROUS","DANGER HAI");
+                                    if (category.equals("1")) {
+                                        //danger[0] = "Covid-19 POSITIVE";
+                                        SharedPreferences.Editor editor = myPrefs.edit();
+                                        editor.putString("DANGER", "Covid-19 POSITIVE");
+                                        editor.apply();
+                                    } else {
+                                        //danger[0] = "dangerous";
+                                        SharedPreferences.Editor editor = myPrefs.edit();
+                                        editor.putString("DANGER", "Dangerous");
+                                        editor.apply();
+                                    }
                                 }
                             }
                         }
+                        else{
+                            Log.d(TAG, "onSuccess: LIST Empty");
+                        }
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.d(TAG, e.toString());
                     }
                 });
 
 
-                if (!danger[0].equals("None"))
-                    return danger[0];
+                if (myPrefs.getString("DANGER","None")!="None") {
+                    Log.d("Return kr",myPrefs.getString("DANGER", "None"));
+                    return myPrefs.getString("DANGER", "None");
+                }
             }
         }
 
-        return danger[0];
+        return myPrefs.getString("DANGER","None");
 
     }
 
@@ -139,10 +171,15 @@ public class LocationUpdatesBroadcastReceiver extends BroadcastReceiver {
             float longitude = (float) locations.get(i).getLongitude();
 
             ApiCalls locationApi = retrofit.create(ApiCalls.class);
-            Call<Object> call = locationApi.locationUpdater(token, latitude, longitude);
+            Call<Object> call = locationApi.locationUpdater("Token "+token, latitude, longitude);
             call.enqueue(new CallBackWithRetry<Object>("UpdateLocation", 10) {
                 @Override
                 public void onResponse(Call<Object> call, Response<Object> response) {
+                    if(!response.isSuccessful() && response.body() != null){
+                        Log.d("LOCATION UPDATE","NO RESPONSE");
+                        return;
+                    }
+                    Log.d(TAG,response.toString());
                     Log.d(TAG,"location updated");
                 }
 

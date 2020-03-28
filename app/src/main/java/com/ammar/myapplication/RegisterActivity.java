@@ -55,7 +55,7 @@ public class RegisterActivity extends AppCompatActivity {
         final int category = spinner.getSelectedItemPosition() + 1;
         final String mail = email.getText().toString();
         //User object
-        final User user = new User(id, pwd, mail);
+        final User user = new User(id, pwd, mail,category);
 
         //Code to send details to server
         OkHttpClient client = new OkHttpClient.Builder()
@@ -78,6 +78,7 @@ public class RegisterActivity extends AppCompatActivity {
 
                 if(!response.isSuccessful()) {
                     showAlertDialogue();
+                    Toast.makeText(RegisterActivity.this,"Please Retry",Toast.LENGTH_LONG).show();
                     Log.d("APICALL","FAILED");
                     return;
                 }
@@ -99,6 +100,7 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<Object> call, Throwable t) {
                 Log.d("APICALL","FAILED"+t.toString());
+                Toast.makeText(RegisterActivity.this,"Please Retry",Toast.LENGTH_LONG).show();
                 showAlertDialogue();
             }
         });

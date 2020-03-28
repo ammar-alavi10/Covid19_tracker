@@ -42,6 +42,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -56,6 +57,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -70,24 +75,26 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         SharedPreferences.OnSharedPreferenceChangeListener{
 
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
-    private static final long UPDATE_INTERVAL = 10 * 1000;
+    private static final long UPDATE_INTERVAL = 5 * 1000;
     private static final long FASTEST_UPDATE_INTERVAL = UPDATE_INTERVAL / 2;
     private static final long MAX_WAIT_TIME = UPDATE_INTERVAL * 3;
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest mLocationRequest;
     private Button mRequestUpdatesButton;
+    Marker marker = null;
 
     private static final String TAG = MapsActivity.class.getSimpleName();
 
     private GoogleMap mMap;
     LocationManager locationManager;
     LocationListener locationListener;
-    List<LatLng> loclist;
+    List<LatLng> loclist = new ArrayList<LatLng>();
     int mark = 0;
 
 
@@ -126,6 +133,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     protected void onResume() {
+        
         super.onResume();
         updateButtonsState(LocationRequestHelper.getRequesting(this));
 
@@ -310,7 +318,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
         if (s.equals(LocationResultHelper.KEY_LOCATION_UPDATES_RESULT)) {
             //mLocationUpdatesResultView.setText(LocationResultHelper.getSavedLocationResult(this));
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,2000,50,locationListener);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,10000*5,100,locationListener);
         } else if (s.equals(LocationRequestHelper.KEY_LOCATION_UPDATES_REQUESTED)) {
             updateButtonsState(LocationRequestHelper.getRequesting(this));
         }
@@ -326,7 +334,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             try {
                 Log.i(TAG, "Starting location updates");
                 LocationRequestHelper.setRequesting(this, true);
-                List<ChannelNames> channelNames;
                 mFusedLocationClient.requestLocationUpdates(mLocationRequest, getPendingIntent());
             } catch (SecurityException e) {
                 LocationRequestHelper.setRequesting(this, false);
@@ -373,8 +380,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                Toast.makeText(MapsActivity.this, location.toString(), Toast.LENGTH_LONG).show();
-                Marker marker = null;
                 if(mark == 0)
                 {
                     mMap.clear();
@@ -385,10 +390,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     mark++;
                 }
                 LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
-                marker = mMap.addMarker(new MarkerOptions().position(myloc).title(""));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,15));
+                marker = mMap.addMarker(new MarkerOptions()
+                        .position(myloc)
+                        .title("")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,13));
+//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,15));
                 SharedPreferences myprefs = MapsActivity.this.getSharedPreferences("myPrefs",MODE_PRIVATE);
-                Toast.makeText(MapsActivity.this,myprefs.getString("TOKEN","KUCH NHI"),Toast.LENGTH_LONG).show();
                 getandsavechannelnames();
             }
 
@@ -413,15 +421,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             requestPermissions();
         }
         else
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,2000,100,locationListener);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,10000*6*5,100,locationListener);
         getandsavechannelnames();
-        if(loclist != null) {
-            for (int i = 0; i < loclist.size(); i++) {
-                mMap.addMarker(new MarkerOptions().position(loclist.get(i)).title(""));
-            }
-        }
-
-
+        Log.d("Haa","Iske just upar");
     }
 
     private void getandsavechannelnames() {
@@ -433,29 +435,90 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(ApiCalls.BASE_URL)
-                .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
                 .build();
 
         final SharedPreferences myPrefs = this.getSharedPreferences("myPrefs", MODE_PRIVATE);
         String token = myPrefs.getString("TOKEN","KUCH NHI");
-        Toast.makeText(MapsActivity.this,token,Toast.LENGTH_LONG).show();
 
         int i;
         ApiCalls locationApi = retrofit.create(ApiCalls.class);
-        Call<Object> call = locationApi.getLocationNearby(token);
-        call.enqueue(new CallBackWithRetry<Object>("UpdateLocation", 10) {
+//        Call<Coordinates> call = locationApi.getLocationNearby("Token "+token);
+
+        Call<Coordinates> call = locationApi.getLocationNearby("Token "+token);
+        call.enqueue(new CallBackWithRetry<Coordinates>("UpdateLocation", 10) {
             @Override
-            public void onResponse(Call<Object> call, Response<Object> response) {
+            public void onResponse(Call<Coordinates> call, Response<Coordinates> response) {
 
                 if(!response.isSuccessful() || response.body() == null){
                     Toast.makeText(getApplicationContext(),"No nearby Patients", Toast.LENGTH_LONG).show();
                     return;
                 }
 
-                String resp = response.body().toString();
-                try {
-                    JSONObject obj = new JSONObject(resp);
+                Coordinates coordinates = response.body();
+                List<Global_plotted_coordinates> global_plotted_coordinates = coordinates.getGlobal_plotted_coordinates();
+                User_plotted_data user_plotted_data = coordinates.getUser_plotted_data();
+                int i;
+                if(mMap!=null)
+                {
+                    mMap.clear();
+                }
+                for(i = 0; i < global_plotted_coordinates.size(); i++)
+                {
+                    try{
+                        int channelid = global_plotted_coordinates.get(i).getChannel_id();
+                        int status = global_plotted_coordinates.get(i).getStatus();
+                        Log.d("Channelid",String.valueOf(channelid));
+                        Log.d("Status",String.valueOf(status));
+                        SharedPreferences.Editor editor = myPrefs.edit();
+                        editor.putInt("CHANNELID"+ String.valueOf(i), channelid);
+                        editor.putInt("CATEGORY"+ String.valueOf(i), status);
+                        editor.apply();
+                        Double lat = (double) global_plotted_coordinates.get(i).getLatitude();
+                        Double lon = (double) global_plotted_coordinates.get(i).getLongitude();
+                        Log.d("Latitude",String.valueOf(lat));
+                        Log.d("Longitude",String.valueOf(lon));
+                        LatLng loc = new LatLng(lat,lon);
+                        loclist.add(loc);
+                        if( mMap != null && ((user_plotted_data.getChannel_id())!=global_plotted_coordinates.get(i).getChannel_id()))
+                        {
+                            if(status!=1) {
+                                mMap.addMarker(new MarkerOptions()
+                                        .position(loc)
+                                        .title("")
+                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                            }
+                            else{
+                                mMap.addMarker(new MarkerOptions()
+                                        .position(loc)
+                                        .title("")
+                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
+                            }
+                        }
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+
+
+                }
+                if(mMap!=null)
+                {
+                    LatLng lng = new LatLng(user_plotted_data.getLatitude(),user_plotted_data.getLongitude());
+                    marker = mMap.addMarker(new MarkerOptions()
+                            .position(lng)
+                            .title("")
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lng,13));
+                }
+                int mychannel = user_plotted_data.getChannel_id();
+                SharedPreferences.Editor editor = myPrefs.edit();
+                editor.putInt("TotalChannels",i);
+                editor.putInt("MYCHANNELID", mychannel);
+                editor.apply();
+                /*try {
+
+                    JSONObject obj = new JSONObject(response.body().toString());
                     JSONArray array = obj.getJSONArray("global_plotted_coordinates");
                     int i;
                     for (i =0 ;i < array.length(); i++)
@@ -485,15 +548,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     editor.apply();
                 } catch (JSONException e) {
                     e.printStackTrace();
-                }
+                }*/
 
             }
 
             @Override
-            public void onFailure(Call<Object> call, Throwable t) {
+            public void onFailure(Call<Coordinates> call, Throwable t) {
+                t.printStackTrace();
                 super.onFailure(call, t);
             }
         });
     }
+
 
 }
