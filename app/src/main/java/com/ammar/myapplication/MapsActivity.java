@@ -81,7 +81,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SharedPreferences.OnSharedPreferenceChangeListener{
 
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
-    private static final long UPDATE_INTERVAL = 5 * 1000;
+    private static final long UPDATE_INTERVAL = 10 * 1000;
     private static final long FASTEST_UPDATE_INTERVAL = UPDATE_INTERVAL / 2;
     private static final long MAX_WAIT_TIME = UPDATE_INTERVAL * 3;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -102,6 +102,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        SharedPreferences myPrefs = this.getSharedPreferences("myPrefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor1 = myPrefs.edit();
+        editor1.putInt("MARKER",0);
+        editor1.apply();
 
         FirebaseApp.initializeApp(this);
 
@@ -133,7 +138,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     protected void onResume() {
-        
+
         super.onResume();
         updateButtonsState(LocationRequestHelper.getRequesting(this));
 
@@ -318,7 +323,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
         if (s.equals(LocationResultHelper.KEY_LOCATION_UPDATES_RESULT)) {
             //mLocationUpdatesResultView.setText(LocationResultHelper.getSavedLocationResult(this));
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,10000*5,100,locationListener);
         } else if (s.equals(LocationRequestHelper.KEY_LOCATION_UPDATES_REQUESTED)) {
             updateButtonsState(LocationRequestHelper.getRequesting(this));
         }
@@ -383,21 +387,33 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 if(mark == 0)
                 {
                     mMap.clear();
+                    LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
+                    marker = mMap.addMarker(new MarkerOptions()
+                            .position(myloc)
+                            .title("")
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,15));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,13));
                 }
                 else
                 {
                     marker.remove();
                     mark++;
+                    LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
+                    marker = mMap.addMarker(new MarkerOptions()
+                            .position(myloc)
+                            .title("")
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
                 }
                 LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
                 marker = mMap.addMarker(new MarkerOptions()
                         .position(myloc)
                         .title("")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,13));
 //                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,15));
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,13));
                 SharedPreferences myprefs = MapsActivity.this.getSharedPreferences("myPrefs",MODE_PRIVATE);
-                getandsavechannelnames();
+                //getandsavechannelnames();
             }
 
             @Override
@@ -481,19 +497,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         Log.d("Longitude",String.valueOf(lon));
                         LatLng loc = new LatLng(lat,lon);
                         loclist.add(loc);
-                        if( mMap != null && ((user_plotted_data.getChannel_id())!=global_plotted_coordinates.get(i).getChannel_id()))
-                        {
-                            if(status!=1) {
-                                mMap.addMarker(new MarkerOptions()
-                                        .position(loc)
-                                        .title("")
-                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
-                            }
-                            else{
-                                mMap.addMarker(new MarkerOptions()
-                                        .position(loc)
-                                        .title("")
-                                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
+                        int m = myPrefs.getInt("MARKER",0);
+                        if(m == 0) {
+                            if (mMap != null && ((user_plotted_data.getChannel_id()) != global_plotted_coordinates.get(i).getChannel_id())) {
+                                if (status != 1) {
+                                    mMap.addMarker(new MarkerOptions()
+                                            .position(loc)
+                                            .title("")
+                                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                                } else {
+                                    mMap.addMarker(new MarkerOptions()
+                                            .position(loc)
+                                            .title("")
+                                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
+                                }
                             }
                         }
                     }catch (Exception e){
@@ -502,6 +519,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
                 }
+                SharedPreferences.Editor editor1 = myPrefs.edit();
+                editor1.putInt("MARKER",1);
+                editor1.apply();
+
                 if(mMap!=null)
                 {
                     LatLng lng = new LatLng(user_plotted_data.getLatitude(),user_plotted_data.getLongitude());
@@ -509,7 +530,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             .position(lng)
                             .title("")
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lng,13));
+                    if(mark == 0){
+                        mark++;
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lng,13));
+                    }
                 }
                 int mychannel = user_plotted_data.getChannel_id();
                 SharedPreferences.Editor editor = myPrefs.edit();
