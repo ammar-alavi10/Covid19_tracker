@@ -8,8 +8,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,6 +17,8 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
+
+import com.google.gson.Gson;
 
 import java.util.concurrent.TimeUnit;
 
@@ -91,6 +91,7 @@ public class RegisterActivity extends AppCompatActivity {
                 editor.putString("EMAIL", mail);
                 editor.putInt("CATEGORY", category);
                 editor.apply();
+                loginUser(id,pwd);
                 Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
                 startActivity(intent);
                 finish();
@@ -102,6 +103,51 @@ public class RegisterActivity extends AppCompatActivity {
                 Log.d("APICALL","FAILED"+t.toString());
                 Toast.makeText(RegisterActivity.this,"Please Retry",Toast.LENGTH_LONG).show();
                 showAlertDialogue();
+            }
+        });
+    }
+
+    public void loginUser(String id, String pwd){
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(100, TimeUnit.SECONDS)
+                .readTimeout(100, TimeUnit.SECONDS)
+                .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(ApiCalls.BASE_URL)
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        ApiCalls loginApi = retrofit.create(ApiCalls.class);
+        Call<Object> call = loginApi.getToken(id, pwd);
+
+        call.enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(Call<Object> call, Response<Object> response) {
+
+                if (!response.isSuccessful()) {
+                    showAlertDialogue();
+                    Log.d("APICALL", "FAILED");
+                    Toast.makeText(RegisterActivity.this, "Please Retry", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                String token = new Gson().toJson(response.body()).split(":\"")[1].split("\"")[0];
+                SharedPreferences.Editor editor = myPrefs.edit();
+                editor.putString("TOKEN", token);
+                editor.apply();
+
+                Intent intent = new Intent(RegisterActivity.this,MapsActivity.class);
+                startActivity(intent);
+                finish();
+
+            }
+
+            @Override
+            public void onFailure(Call<Object> call, Throwable t) {
+                showAlertDialogue();
+                Log.d("APICALL","FAILED"+t.toString());
             }
         });
     }

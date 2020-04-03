@@ -2,37 +2,43 @@ package com.ammar.myapplication;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
-import android.os.Build;
-import android.os.IBinder;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
-import android.webkit.PermissionRequest;
+
 import android.widget.Button;
-import android.widget.TextView;
+
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
+
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.GoogleApiClient;
+
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
@@ -51,50 +57,44 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.FirebaseApp;
-import com.google.gson.Gson;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingService;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.FragmentActivity;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback,
         SharedPreferences.OnSharedPreferenceChangeListener{
 
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
-    private static final long UPDATE_INTERVAL = 10 * 1000;
+    private static final long UPDATE_INTERVAL = 20 * 1000;
     private static final long FASTEST_UPDATE_INTERVAL = UPDATE_INTERVAL / 2;
     private static final long MAX_WAIT_TIME = UPDATE_INTERVAL * 3;
     private FusedLocationProviderClient mFusedLocationClient;
+    private LocationRequest locationRequest;
+    private LocationCallback locationCallback;
     private LocationRequest mLocationRequest;
     private Button mRequestUpdatesButton;
     Marker marker = null;
 
     private static final String TAG = MapsActivity.class.getSimpleName();
 
+    SharedPreferences myPrefs;
     private GoogleMap mMap;
     LocationManager locationManager;
+    AlarmManager alarmManager;
     LocationListener locationListener;
-    List<LatLng> loclist = new ArrayList<LatLng>();
+    List<LatLng> loclist = new ArrayList<>();
     int mark = 0;
 
 
@@ -127,6 +127,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mFusedLocationClient!=null){
+            mFusedLocationClient.removeLocationUpdates(locationCallback);
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menus,menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.change_status:
+                Intent intent = new Intent(MapsActivity.this,ChangeStatus.class);
+                startActivity(intent);
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
 
     @Override
     protected void onStart() {
@@ -339,11 +364,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.i(TAG, "Starting location updates");
                 LocationRequestHelper.setRequesting(this, true);
                 mFusedLocationClient.requestLocationUpdates(mLocationRequest, getPendingIntent());
+                FirebaseMessaging.getInstance().subscribeToTopic("track_location");
+                myPrefs = getSharedPreferences("myPrefs",MODE_PRIVATE);
+                SharedPreferences.Editor editor = myPrefs.edit();
+                editor.putBoolean("TRACKER",true);
+                editor.apply();
+
             } catch (SecurityException e) {
                 LocationRequestHelper.setRequesting(this, false);
                 e.printStackTrace();
             }
-            mRequestUpdatesButton.setText("Stop Tracking");
+            mRequestUpdatesButton.setText(R.string.stop_tracking);
         }
         else
         {
@@ -358,7 +389,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.i(TAG, "Removing location updates");
         LocationRequestHelper.setRequesting(this, false);
         mFusedLocationClient.removeLocationUpdates(getPendingIntent());
-        mRequestUpdatesButton.setText("Start Tracking");
+        if(mFusedLocationClient!=null){
+            mFusedLocationClient.removeLocationUpdates(locationCallback);
+        }
+        mRequestUpdatesButton.setText(R.string.start_tracking);
+        FirebaseMessaging.getInstance().unsubscribeFromTopic("track_location");
+        myPrefs = getSharedPreferences("myPrefs",MODE_PRIVATE);
+        SharedPreferences.Editor editor = myPrefs.edit();
+        editor.putBoolean("TRACKER",false);
+        editor.apply();
+        Intent intent = new Intent(this, MyLocationService.class);
+        if(isMyServiceRunning(MyLocationService.class))
+        {
+            stopService(intent);
+        }
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -368,9 +422,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     private void updateButtonsState(boolean requestingLocationUpdates) {
         if (requestingLocationUpdates) {
-            mRequestUpdatesButton.setText("Stop Tracking");
+            mRequestUpdatesButton.setText(R.string.stop_tracking);
         } else {
-            mRequestUpdatesButton.setText("Start Tracking");
+            mRequestUpdatesButton.setText(R.string.start_tracking);
         }
     }
 
@@ -380,66 +434,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        locationListener = new LocationListener() {
+        Log.d("Haa","Iske just upar");
+
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(1000*10);
+        locationCallback = new LocationCallback(){
             @Override
-            public void onLocationChanged(Location location) {
-                if(mark == 0)
-                {
-                    mMap.clear();
-                    LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
-                    marker = mMap.addMarker(new MarkerOptions()
-                            .position(myloc)
-                            .title("")
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,15));
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,13));
+            public void onLocationResult(LocationResult locationResult) {
+                if(locationResult == null)
+                    return;
+                else{
+                    Location location = locationResult.getLastLocation();
+                    if(mark == 0)
+                    {
+                        mMap.clear();
+                        LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
+                        marker = mMap.addMarker(new MarkerOptions()
+                                .position(myloc)
+                                .title("")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,13));
+                    }
+                    else
+                    {
+                        marker.remove();
+                        mark++;
+                        LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
+                        marker = mMap.addMarker(new MarkerOptions()
+                                .position(myloc)
+                                .title("")
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLng(myloc));
+                    }
                 }
-                else
-                {
-                    marker.remove();
-                    mark++;
-                    LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
-                    marker = mMap.addMarker(new MarkerOptions()
-                            .position(myloc)
-                            .title("")
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-                }
-                LatLng myloc = new LatLng(location.getLatitude(), location.getLongitude());
-                marker = mMap.addMarker(new MarkerOptions()
-                        .position(myloc)
-                        .title("")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,15));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myloc,13));
-                SharedPreferences myprefs = MapsActivity.this.getSharedPreferences("myPrefs",MODE_PRIVATE);
-                //getandsavechannelnames();
-            }
-
-            @Override
-            public void onStatusChanged(String s, int i, Bundle bundle) {
-
-            }
-
-            @Override
-            public void onProviderEnabled(String s) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String s) {
-
             }
         };
-
         if(!checkPermissions())
         {
             requestPermissions();
         }
         else
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,10000*6*5,100,locationListener);
+            mFusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
         getandsavechannelnames();
-        Log.d("Haa","Iske just upar");
     }
 
     private void getandsavechannelnames() {
@@ -458,7 +496,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         final SharedPreferences myPrefs = this.getSharedPreferences("myPrefs", MODE_PRIVATE);
         String token = myPrefs.getString("TOKEN","KUCH NHI");
 
-        int i;
         ApiCalls locationApi = retrofit.create(ApiCalls.class);
 //        Call<Coordinates> call = locationApi.getLocationNearby("Token "+token);
 
@@ -488,8 +525,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         Log.d("Channelid",String.valueOf(channelid));
                         Log.d("Status",String.valueOf(status));
                         SharedPreferences.Editor editor = myPrefs.edit();
-                        editor.putInt("CHANNELID"+ String.valueOf(i), channelid);
-                        editor.putInt("CATEGORY"+ String.valueOf(i), status);
+                        editor.putInt("CHANNELID"+ i, channelid);
+                        editor.putInt("CATEGORY"+ i, status);
                         editor.apply();
                         Double lat = (double) global_plotted_coordinates.get(i).getLatitude();
                         Double lon = (double) global_plotted_coordinates.get(i).getLongitude();
@@ -525,6 +562,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 if(mMap!=null)
                 {
+                    if(marker != null)
+                    {
+                        marker.remove();
+                    }
                     LatLng lng = new LatLng(user_plotted_data.getLatitude(),user_plotted_data.getLongitude());
                     marker = mMap.addMarker(new MarkerOptions()
                             .position(lng)
@@ -540,39 +581,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 editor.putInt("TotalChannels",i);
                 editor.putInt("MYCHANNELID", mychannel);
                 editor.apply();
-                /*try {
-
-                    JSONObject obj = new JSONObject(response.body().toString());
-                    JSONArray array = obj.getJSONArray("global_plotted_coordinates");
-                    int i;
-                    for (i =0 ;i < array.length(); i++)
-                    {
-                        JSONObject jsonObject = array.getJSONObject(i);
-                        if(jsonObject.isNull("channel_id") && jsonObject.isNull("status"))
-                        {
-
-                            continue;
-                        }
-                        int channel = jsonObject.getInt("channel_id");
-                        int category = jsonObject.getInt("status");
-                        SharedPreferences.Editor editor = myPrefs.edit();
-                        editor.putInt("CHANNELID"+ String.valueOf(i), channel);
-                        editor.putInt("CATEGORY"+ String.valueOf(i), category);
-                        editor.apply();
-                        Double lat = jsonObject.getDouble("latitude");
-                        Double lon = jsonObject.getDouble("longitude");
-                        LatLng loc = new LatLng(lat,lon);
-                        loclist.add(loc);
-                    }
-                    JSONObject myobj = obj.getJSONObject("user_plotted_data");
-                    int mychannel = myobj.getInt("channel_id");
-                    SharedPreferences.Editor editor = myPrefs.edit();
-                    editor.putInt("TotalChannels",i);
-                    editor.putInt("MYCHANNELID", mychannel);
-                    editor.apply();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }*/
 
             }
 

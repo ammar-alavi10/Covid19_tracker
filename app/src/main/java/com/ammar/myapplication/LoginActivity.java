@@ -43,7 +43,7 @@ public class LoginActivity extends AppCompatActivity {
         password = mypref.getString("PASSWORD", "password");
         usrname.setText(username);
         pwd.setText(password);
-        if(username != "username"){
+        if(!username.equals("username")){
             loginUser(loginbtn);
         }
     }

@@ -22,37 +22,6 @@ public interface ApiCalls {
     @POST("tracker/updateUserDetail/")
     Call<Object> updateUserDetail(@Header("Authorization") String token, @Body int userStatusChoice);
 
-    /*
-            OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(100, TimeUnit.SECONDS)
-                .readTimeout(100, TimeUnit.SECONDS)
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(ApiCalls.BASE_URL)
-                .client(client)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        ApiCalls statusApi = retrofit.create(ApiCalls.class);
-        Call<Object> call = statusApi.getToken(token, statusCode);
-        call.enqueue(new Callback<Object>() {
-            @Override
-            public void onResponse(Call<Object> call, Response<Object> response) {
-
-                if(!response.isSuccessful()) {
-
-                }
-
-            }
-
-            @Override
-            public void onFailure(Call<Object> call, Throwable t) {
-
-            }
-        });
-     */
-
     @FormUrlEncoded
     @POST("tracker/inputLocation")
     Call<Object> locationUpdater(@Header("Authorization") String token, @Field("latitude") float latitude, @Field("longitude") float longitude);
@@ -89,6 +58,10 @@ public interface ApiCalls {
 
     @POST("/tracker/table/")
     Call<Coordinates> getLocationNearby(@Header("Authorization") String token);
+
+    @FormUrlEncoded
+    @POST("/tracker/user_individual_track/")
+    Call<UserLocation> getLocationUser(@Header("Authorization") String token, @Field("channel") int channel);
 
 
 }

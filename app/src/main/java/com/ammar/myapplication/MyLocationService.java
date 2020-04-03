@@ -1,25 +1,28 @@
 package com.ammar.myapplication;
 
-import android.content.BroadcastReceiver;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.os.Build;
+import android.os.IBinder;
 import android.util.Log;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreSettings;
+import com.google.android.gms.location.LocationServices;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -27,55 +30,106 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-import static android.content.Context.MODE_PRIVATE;
+public class MyLocationService extends Service {
+
+    private LocationRequest locationRequest;
+    private LocationCallback locationCallback;
+    private FusedLocationProviderClient mFusedLocationClient;
+    private static final String TAG = MyLocationService.class.getSimpleName();
 
 
-public class LocationUpdatesBroadcastReceiver extends BroadcastReceiver {
-    private static final String TAG = "LUBroadcastReceiver";
     SharedPreferences myPrefs;
-    static final String ACTION_PROCESS_UPDATES =
-            "com.google.android.gms.location.sample.backgroundlocationupdates.action" +
-                    ".PROCESS_UPDATES";
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 
     @Override
-    public void onReceive(Context context, Intent intent) {
-        if (intent != null) {
-            final String action = intent.getAction();
-            if (ACTION_PROCESS_UPDATES.equals(action)) {
-                LocationResult result = LocationResult.extractResult(intent);
-                if (result != null) {
-                    List<Location> locations = result.getLocations();
-                    LocationResultHelper locationResultHelper = new LocationResultHelper(
-                            context, locations);
-                    FirebaseApp.initializeApp(context);
+    public void onCreate() {
+        super.onCreate();
+        Context context = this;
+        if (Build.VERSION.SDK_INT >= 26) {
+            String CHANNEL_ID = "my_channel_01";
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
+                    "Channel human readable title",
+                    NotificationManager.IMPORTANCE_DEFAULT);
 
-                    FirebaseFirestore db = FirebaseFirestore.getInstance();
-                    FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-                            .setPersistenceEnabled(true)
-                            .build();
-                    db.setFirestoreSettings(settings);
+            ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(channel);
+
+            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("")
+                    .setContentText("").build();
+
+            startForeground(1, notification);
+        }
+
+
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Context context = this;
+        if (Build.VERSION.SDK_INT >= 26) {
+            String CHANNEL_ID = "my_channel_01";
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
+                    "Channel human readable title",
+                    NotificationManager.IMPORTANCE_DEFAULT);
+
+            ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(channel);
+
+            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("")
+                    .setContentText("").build();
+
+            startForeground(1, notification);
+        }
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(1000*20);
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                if (locationResult == null) {
+                    return;
+                }
+                else {
+                    Log.d("APAN CHANGE","Location Found");
+                    Location loc = locationResult.getLastLocation();
+                    List<Location> locations = locationResult.getLocations();
+
                     sendLocationToServer(context, locations);
 
 //                    List<Location> nearbyLocations = requestLocationsFromServer();
-                    distOfLoc(context, locations.get(locations.size()-1), locations);
-
+                    distOfLoc(context, locations.get(locations.size()-1),locations);
+                    LocationResultHelper locationResultHelper = new LocationResultHelper(context,
+                            locations);
                     // Save the location data to SharedPreferences.
                     locationResultHelper.saveResults();
                     // Show notification with the location data.
-                    //locationResultHelper.showNotification(myPrefs.getString("DANGER","None"));
-                    myPrefs = context.getSharedPreferences("myPrefs", MODE_PRIVATE);
-                    SharedPreferences.Editor editor = myPrefs.edit();
-                    editor.putString("DANGER", "None");
-                    editor.apply();
+                    //locationResultHelper.showNotification(danger);
                     Log.i(TAG, LocationResultHelper.getSavedLocationResult(context));
+
                 }
             }
+        };
+        mFusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
+        return START_NOT_STICKY;
+
+    }
+
+    @Override
+    public void onDestroy() {
+        if(mFusedLocationClient!=null){
+            mFusedLocationClient.removeLocationUpdates(locationCallback);
         }
+        super.onDestroy();
     }
 
     private void distOfLoc(Context context, final Location mylocation, List<Location> locations) {
         //code to get Locations from server
-        Log.d("Firebase","Firestore ke andar jaane ki koshish");
+        Log.d("FirebaseService","Firestore ke andar jaane ki koshish");
 
         myPrefs = context.getSharedPreferences("myPrefs", MODE_PRIVATE);
         int mychannel = myPrefs.getInt("MYCHANNELID",1000);
@@ -126,7 +180,7 @@ public class LocationUpdatesBroadcastReceiver extends BroadcastReceiver {
                                 location.setLatitude(lat);
                                 location.setLongitude(lon);
                                 double distance = mylocation.distanceTo(location);
-                                Log.d("DISTANCE", String.valueOf(distance));
+                                Log.d("DISTANCESERVICE", String.valueOf(distance));
                                 if (distance < 100.0) {
                                     Log.d("DANGEROUS", "DANGER HAI");
                                     if (category.equals("1")) {
@@ -209,4 +263,5 @@ public class LocationUpdatesBroadcastReceiver extends BroadcastReceiver {
         }
 
     }
+
 }

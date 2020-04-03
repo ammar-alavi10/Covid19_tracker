@@ -11,17 +11,13 @@ import android.location.Location;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.os.Build;
 import android.preference.PreferenceManager;
 import android.app.NotificationChannel;
 import android.util.Log;
-
-
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.List;
-
-import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
 
 /**
  * Class to process location results.
@@ -37,7 +33,6 @@ class LocationResultHelper {
     private List<Location> mLocations;
     private NotificationManager mNotificationManager;
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     LocationResultHelper(Context context, List<Location> locations) {
         mContext = context;
         mLocations = locations;
@@ -48,12 +43,17 @@ class LocationResultHelper {
                 .setUsage(AudioAttributes.USAGE_ALARM)
                 .build();
 
-        NotificationChannel channel = new NotificationChannel(PRIMARY_CHANNEL,
-                context.getString(R.string.default_channel), NotificationManager.IMPORTANCE_DEFAULT);
-        channel.setLightColor(Color.GREEN);
-        channel.setSound(uri,audioAttributes);
-        channel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
-        getNotificationManager().createNotificationChannel(channel);
+
+        NotificationChannel channel;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            channel = new NotificationChannel(PRIMARY_CHANNEL,
+                    context.getString(R.string.default_channel), NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setLightColor(Color.GREEN);
+            channel.setSound(uri,audioAttributes);
+            channel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+            getNotificationManager().createNotificationChannel(channel);
+        }
+
     }
 
     /**
@@ -146,7 +146,7 @@ class LocationResultHelper {
                 stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
 
-        Notification.Builder notificationBuilder = new Notification.Builder(mContext,
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mContext,
                 PRIMARY_CHANNEL)
                 .setContentTitle(Title)
                 .setContentText(text)
