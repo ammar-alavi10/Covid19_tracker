@@ -16,6 +16,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -346,9 +347,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @SuppressLint("MissingPermission")
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-        if (s.equals(LocationResultHelper.KEY_LOCATION_UPDATES_RESULT)) {
-            //mLocationUpdatesResultView.setText(LocationResultHelper.getSavedLocationResult(this));
-        } else if (s.equals(LocationRequestHelper.KEY_LOCATION_UPDATES_REQUESTED)) {
+        if (s.equals(LocationRequestHelper.KEY_LOCATION_UPDATES_REQUESTED)) {
             updateButtonsState(LocationRequestHelper.getRequesting(this));
         }
     }
@@ -369,6 +368,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 SharedPreferences.Editor editor = myPrefs.edit();
                 editor.putBoolean("TRACKER",true);
                 editor.apply();
+                mRequestUpdatesButton.setEnabled(false);
+                mRequestUpdatesButton.setClickable(false);
+                mRequestUpdatesButton.setVisibility(View.GONE);
+                Handler handler=new Handler();
+                Runnable r=new Runnable() {
+                    public void run() {
+                        //what ever you do here will be done after 5 seconds delay.
+                        mRequestUpdatesButton.setEnabled(true);
+                        mRequestUpdatesButton.setClickable(true);
+                        mRequestUpdatesButton.setVisibility(View.VISIBLE);
+
+                    }
+                };
+                handler.postDelayed(r, 5000);
 
             } catch (SecurityException e) {
                 LocationRequestHelper.setRequesting(this, false);
@@ -399,9 +412,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         editor.putBoolean("TRACKER",false);
         editor.apply();
         Intent intent = new Intent(this, MyLocationService.class);
+        Intent intent1 = new Intent(this,TableTrackerService.class);
         if(isMyServiceRunning(MyLocationService.class))
         {
             stopService(intent);
+        }
+        if(isMyServiceRunning(TableTrackerService.class))
+        {
+            stopService(intent1);
         }
     }
 
@@ -443,9 +461,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         locationCallback = new LocationCallback(){
             @Override
             public void onLocationResult(LocationResult locationResult) {
-                if(locationResult == null)
-                    return;
-                else{
+                if(locationResult != null){
                     Location location = locationResult.getLastLocation();
                     if(mark == 0)
                     {

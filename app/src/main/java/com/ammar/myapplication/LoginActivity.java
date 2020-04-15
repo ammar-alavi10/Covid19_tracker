@@ -2,6 +2,7 @@ package com.ammar.myapplication;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -12,6 +13,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -46,6 +48,13 @@ public class LoginActivity extends AppCompatActivity {
         if(!username.equals("username")){
             loginUser(loginbtn);
         }
+
+        ConstraintLayout constraintLayout = findViewById(R.id.constraint_login);
+        AnimationDrawable animationDrawable = (AnimationDrawable) constraintLayout.getBackground();
+        animationDrawable.setEnterFadeDuration(2500);
+        animationDrawable.setExitFadeDuration(5000);
+
+        animationDrawable.start();
     }
 
     public void toRegister(View view) {

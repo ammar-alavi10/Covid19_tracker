@@ -4,6 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/constraint_register"
+    android:background="@drawable/gradient_animation_list"
     tools:context=".RegisterActivity">
 
     <RelativeLayout
@@ -14,117 +16,143 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="125dp"
+                android:layout_height="125dp"
+                android:src="@drawable/followers"
+                android:layout_gravity="center"/>
+
+
+            <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/custom_drawable"
             android:layout_gravity="center"
-            android:gravity="center">
+            android:gravity="center"
+            android:orientation="vertical">
+
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="horizontal"
-                android:layout_gravity="center">
+                android:layout_gravity="center"
+                android:orientation="horizontal">
 
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Mobile No"
-                    android:textSize="20sp"
-                    android:layout_marginRight="10dp"/>
 
                 <EditText
+                    android:id="@+id/name_register"
                     android:layout_width="150dp"
                     android:layout_height="wrap_content"
-                    android:inputType="phone"
-                    android:id="@+id/mobile_no_register"
+                    android:hint="Name"
+                    android:textColor="#fff"
                     android:textSize="20sp"
-                    android:hint="Phone No"/>
-
+                    android:textColorHint="#fff"/>
 
 
             </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:layout_gravity="center">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:orientation="horizontal">
 
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Email id"
-                android:textSize="20sp"
-                android:layout_marginRight="25dp"/>
 
-            <EditText
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:inputType="text"
-                android:id="@+id/email_id"
-                android:textSize="20sp"
-                android:hint="Email Id"/>
-
-        </LinearLayout>
+                <EditText
+                    android:id="@+id/mobile_no_register"
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:hint="Phone No"
+                    android:inputType="phone"
+                    android:textColor="#fff"
+                    android:textSize="20sp"
+                    android:textColorHint="#fff"/>
 
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:layout_gravity="center">
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:orientation="horizontal">
 
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Password"
-                android:textSize="20sp"
-                android:layout_marginRight="10dp"/>
+
+                <EditText
+                    android:id="@+id/email_id"
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:hint="Email Id"
+                    android:inputType="text"
+                    android:textColor="#fff"
+                    android:textSize="20sp"
+                    android:textColorHint="#fff"/>
+
+            </LinearLayout>
 
 
-            <EditText
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:id="@+id/password_register"
-                android:hint="Password"
-                android:textSize="20sp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:orientation="horizontal">
 
-        </LinearLayout>
+
+                <EditText
+                    android:id="@+id/password_register"
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:hint="Password"
+                    android:inputType="textPassword"
+                    android:textColor="#fff"
+                    android:textSize="20sp"
+                    android:textColorHint="#fff"/>
+
+            </LinearLayout>
 
             <Spinner
+                android:id="@+id/spin"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:entries="@array/type_of_person_arrays"
-                android:id="@+id/spin"
-                android:layout_marginTop="8dp"/>
+                android:layout_marginTop="8dp"
+                android:popupBackground="prmiary"
+                android:theme="@style/Spinner"
+                android:entries="@array/type_of_person_arrays" />
 
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:background="@color/colorPrimary"
+                android:layout_marginTop="30dp"
+                android:onClick="registerUser"
                 android:text="SIGN UP"
                 android:textColor="#FFFFFF"
                 android:textSize="20sp"
-                android:onClick="registerUser"
-                android:layout_marginTop="30dp"/>
+                app:backgroundTint="@android:color/transparent"
+                app:cornerRadius="8dp"
+                app:rippleColor="#33AAAAAA"
+                app:strokeColor="#000"
+                app:strokeWidth="2dp" />
+
+        </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Already a user?"
-                android:layout_marginTop="20dp"
-                android:textStyle="italic"
-                android:textColor="#000000"
-                android:textSize="15dp"
                 android:layout_gravity="center"
-                android:onClick="toLogin"/>
+                android:layout_marginTop="20dp"
+                android:onClick="toLogin"
+                android:text="Already a user?"
+                android:textColor="#FFF"
+                android:textSize="15dp"
+                android:textStyle="italic" />
 
         </LinearLayout>
-
 
     </RelativeLayout>
 

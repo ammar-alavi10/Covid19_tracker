@@ -22,7 +22,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".ChangeStatus"></activity>
+        <activity android:name=".ChangeStatus" />
         <activity android:name=".LoginActivity" />
         <activity android:name=".RegisterActivity">
             <intent-filter>
@@ -45,9 +45,15 @@
 
         <activity
             android:name=".MapsActivity"
-            android:label="Covid-19 Tracker"></activity>
+            android:label="Covid-19 Tracker"/>
 
         <service android:name=".MyLocationService"
+            android:exported="false"/>
+
+        <service android:name=".TableTrackerService"
+            android:exported="false"/>
+
+        <service android:name=".MyBluetoothService"
             android:exported="false"/>
 
         <service

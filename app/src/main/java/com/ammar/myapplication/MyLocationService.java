@@ -48,21 +48,21 @@ public class MyLocationService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Context context = this;
-        if (Build.VERSION.SDK_INT >= 26) {
-            String CHANNEL_ID = "my_channel_01";
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
-                    "Channel human readable title",
-                    NotificationManager.IMPORTANCE_DEFAULT);
-
-            ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(channel);
-
-            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                    .setContentTitle("")
-                    .setContentText("").build();
-
-            startForeground(1, notification);
-        }
+//        Context context = this;
+//        if (Build.VERSION.SDK_INT >= 26) {
+//            String CHANNEL_ID = "my_channel_01";
+//            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
+//                    "Channel human readable title",
+//                    NotificationManager.IMPORTANCE_DEFAULT);
+//
+//            ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(channel);
+//
+//            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+//                    .setContentTitle("")
+//                    .setContentText("").build();
+//
+//            startForeground(1, notification);
+//        }
 
 
     }
@@ -76,14 +76,17 @@ public class MyLocationService extends Service {
                     "Channel human readable title",
                     NotificationManager.IMPORTANCE_DEFAULT);
 
-            ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(channel);
+            NotificationManager notificationManager = ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
 
+            notificationManager.createNotificationChannel(channel);
             Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setContentTitle("")
                     .setContentText("").build();
-
             startForeground(1, notification);
+
+
         }
+        myPrefs = getSharedPreferences("myPrefs",MODE_PRIVATE);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -102,7 +105,8 @@ public class MyLocationService extends Service {
                     sendLocationToServer(context, locations);
 
 //                    List<Location> nearbyLocations = requestLocationsFromServer();
-                    distOfLoc(context, locations.get(locations.size()-1),locations);
+//                    distOfLoc(context, locations.get(locations.size()-1),locations);
+                    getDistance(context, myPrefs.getInt("MYCHANNELID",1000), loc, locations);
                     LocationResultHelper locationResultHelper = new LocationResultHelper(context,
                             locations);
                     // Save the location data to SharedPreferences.
@@ -124,27 +128,29 @@ public class MyLocationService extends Service {
         if(mFusedLocationClient!=null){
             mFusedLocationClient.removeLocationUpdates(locationCallback);
         }
+        if (Build.VERSION.SDK_INT >= 26) {
+            stopForeground(true);
+        }
         super.onDestroy();
     }
 
-    private void distOfLoc(Context context, final Location mylocation, List<Location> locations) {
+/*    private void distOfLoc(Context context, final Location mylocation, List<Location> locations) {
         //code to get Locations from server
         Log.d("FirebaseService","Firestore ke andar jaane ki koshish");
 
-        myPrefs = context.getSharedPreferences("myPrefs", MODE_PRIVATE);
+
         int mychannel = myPrefs.getInt("MYCHANNELID",1000);
         int i=0;
         distfun(context,locations,i,mychannel,mylocation);
 
 
-    }
 
-    private void distfun(Context context, List<Location> locations, int i, int mychannel, Location mylocation)
+    }*/
+
+/*    private void distfun(Context context, List<Location> locations, int i, int mychannel, Location mylocation)
     {
 
         if(i < myPrefs.getInt("TotalChannels",0)) {
-            int channelname = myPrefs.getInt("CHANNELID" + i, 1000);
-            final String category = String.valueOf(myPrefs.getInt("CATEGORY" + i, 1000));
             Log.d("Channel name", "channel" + channelname);
             String token = myPrefs.getString("TOKEN", "");
             if (channelname != mychannel && channelname != 1000) {
@@ -216,6 +222,46 @@ public class MyLocationService extends Service {
             }
             else {
                 distfun(context, locations, i + 1, mychannel, mylocation);
+            }
+        }
+    }*/
+
+    public void getDistance(Context context,int mychannel, Location mylocation,List<Location> locations)
+    {
+        myPrefs = context.getSharedPreferences("myPrefs", MODE_PRIVATE);
+        int totalChannels = myPrefs.getInt("TotalChannels",0);
+        for (int i = 0 ; i < totalChannels ; i++){
+            int channelname = myPrefs.getInt("CHANNELID" + i, 1000);
+            String category = String.valueOf(myPrefs.getInt("CATEGORY" + i, 1000));
+            if (channelname != mychannel && channelname != 1000)
+            {
+                Double lat = (double) myPrefs.getFloat("Channel"+i+"latitude",0);
+                Double lon = (double) myPrefs.getFloat("Channel"+i+"longitude",0);
+                if (!category.equals("5")) {
+                    Location location = new Location("New Location");
+                    location.setLatitude(lat);
+                    location.setLongitude(lon);
+                    double distance = mylocation.distanceTo(location);
+                    Log.d("DISTANCESERVICE", String.valueOf(distance));
+                    if (distance < 100.0) {
+                        Log.d("DANGEROUS", "DANGER HAI");
+                        if (category.equals("1")) {
+                            SharedPreferences.Editor editor = myPrefs.edit();
+                            editor.putString("DANGER", "Covid-19 POSITIVE");
+                            editor.apply();
+                            LocationResultHelper locationResultHelper = new LocationResultHelper(context, locations);
+                            locationResultHelper.showNotification("Covid-19 Postive");
+                            return;
+                        } else {
+                            SharedPreferences.Editor editor = myPrefs.edit();
+                            editor.putString("DANGER", "Dangerous");
+                            editor.apply();
+                            LocationResultHelper locationResultHelper = new LocationResultHelper(context, locations);
+                            locationResultHelper.showNotification("Danger");
+                            return;
+                        }
+                    }
+                }
             }
         }
     }

@@ -2,6 +2,7 @@ package com.ammar.myapplication;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -11,6 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -26,6 +28,8 @@ public class RegisterActivity extends AppCompatActivity {
 
     EditText userid;
     EditText password;
+    EditText registerName;
+    EditText email;
     Spinner spinner;
     SharedPreferences myPrefs;
     @Override
@@ -42,20 +46,29 @@ public class RegisterActivity extends AppCompatActivity {
             startActivity(intent);
         }
 
+        ConstraintLayout constraintLayout = findViewById(R.id.constraint_register);
+        AnimationDrawable animationDrawable = (AnimationDrawable) constraintLayout.getBackground();
+        animationDrawable.setEnterFadeDuration(2500);
+        animationDrawable.setExitFadeDuration(5000);
+
+        animationDrawable.start();
+
     }
 
 
     public void registerUser(View view) {
         userid = findViewById(R.id.mobile_no_register);
         password = findViewById(R.id.password_register);
-        final EditText email = findViewById(R.id.email_id);
+        registerName = findViewById(R.id.name_register);
+        email = findViewById(R.id.email_id);
         spinner = findViewById(R.id.spin);
         final String id = userid.getText().toString();
         final String pwd = password.getText().toString();
         final int category = spinner.getSelectedItemPosition() + 1;
         final String mail = email.getText().toString();
+        final String name = registerName.getText().toString();
         //User object
-        final User user = new User(id, pwd, mail,category);
+        final User user = new User(id, pwd, mail,category,name);
 
         //Code to send details to server
         OkHttpClient client = new OkHttpClient.Builder()
@@ -77,9 +90,15 @@ public class RegisterActivity extends AppCompatActivity {
             public void onResponse(Call<Object> call, Response<Object> response) {
 
                 if(!response.isSuccessful()) {
-                    showAlertDialogue();
-                    Toast.makeText(RegisterActivity.this,"Please Retry",Toast.LENGTH_LONG).show();
-                    Log.d("APICALL","FAILED");
+                    if(response.body() == null)
+                    {
+                        Toast.makeText(RegisterActivity.this,"Please Retry",Toast.LENGTH_LONG).show();
+                    }
+                    else {
+                        showAlertDialogue();
+                        Toast.makeText(RegisterActivity.this, response.body().toString(), Toast.LENGTH_LONG).show();
+                        Log.d("APICALL", "FAILED");
+                    }
                     return;
                 }
 
@@ -92,9 +111,9 @@ public class RegisterActivity extends AppCompatActivity {
                 editor.putInt("CATEGORY", category);
                 editor.apply();
                 loginUser(id,pwd);
-                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                startActivity(intent);
-                finish();
+//                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+//                startActivity(intent);
+//                finish();
 
             }
 
