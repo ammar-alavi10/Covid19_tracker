@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/constraint_login"
     android:background="@drawable/gradient_animation_list">
 
@@ -14,70 +14,81 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="125dp"
+                android:layout_height="125dp"
+                android:src="@drawable/followers"
+                android:layout_gravity="center"/>
+
+            <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:paddingTop="80dp"
+            android:background="@drawable/custom_drawable"
             android:layout_gravity="center">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="center">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_gravity="center">
 
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Mobile No"
-                android:textSize="20sp"
-                android:layout_marginRight="10dp"/>
+                    <EditText
+                        android:layout_width="200dp"
+                        android:layout_height="wrap_content"
+                        android:inputType="phone"
+                        android:id="@+id/mobile_no_login"
+                        android:hint="Phone No"
+                        android:textColor="#fff"
+                        android:textSize="20sp"
+                        android:textColorHint="#fff"/>
 
-            <EditText
-                android:layout_width="150dp"
-                android:layout_height="wrap_content"
-                android:inputType="phone"
-                android:id="@+id/mobile_no_login"
-                android:textSize="20sp"
-                android:hint="Phone No"/>
-
-        </LinearLayout>
+                </LinearLayout>
 
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="center">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_gravity="center">
 
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Password"
-                android:textSize="20sp"
-                android:layout_marginRight="10dp"/>
+
+                    <EditText
+                        android:layout_width="200dp"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:id="@+id/password_login"
+                        android:hint="Password"
+                        android:textColor="#fff"
+                        android:textSize="20sp"
+                        android:textColorHint="#fff"/>
+
+                </LinearLayout>
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:background="@color/colorPrimary"
+                    android:text="SIGN IN"
+                    android:onClick="loginUser"
+                    android:id="@+id/login_button"
+                    android:layout_marginTop="30dp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    app:backgroundTint="@android:color/transparent"
+                    app:cornerRadius="8dp"
+                    app:rippleColor="#33AAAAAA"
+                    app:strokeColor="#000"
+                    app:strokeWidth="2dp"/>
 
 
-            <EditText
-                android:layout_width="150dp"
-                android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:id="@+id/password_login"
-                android:hint="Password"
-                android:textSize="20sp"/>
-
-        </LinearLayout>
-
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="@color/colorPrimary"
-                android:text="SIGN IN"
-                android:textColor="#FFFFFF"
-                android:textSize="20sp"
-                android:onClick="loginUser"
-                android:id="@+id/login_button"
-                android:layout_marginTop="30dp"/>
+            </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
@@ -85,10 +96,11 @@
                 android:text="Not a user?  Register"
                 android:layout_marginTop="20dp"
                 android:textStyle="italic"
-                android:textColor="#000000"
+                android:textColor="#FFF"
                 android:textSize="15dp"
                 android:layout_gravity="center"
                 android:onClick="toRegister"/>
+
 
         </LinearLayout>
 
